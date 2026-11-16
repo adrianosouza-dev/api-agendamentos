@@ -5,7 +5,7 @@ import os
 os.environ.update(
     {
         "DATABASE_URL": "sqlite://",  # banco em memória
-        "SECRET_KEY": "chave-so-para-testes",
+        "SECRET_KEY": "chave-so-para-testes-com-32-bytes-ou-mais",
         "ADMIN_USUARIO": "admin",
         "ADMIN_SENHA": "senha-de-teste",
         "FUSO_HORARIO": "America/Sao_Paulo",
