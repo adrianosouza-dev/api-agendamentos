@@ -37,3 +37,11 @@ CORS_ORIGINS = [
     for origem in os.getenv("CORS_ORIGINS", "http://localhost:5500,http://127.0.0.1:5500").split(",")
     if origem.strip()
 ]
+
+# Segurança: com banco de produção (Postgres), não deixa subir com a chave ou senha de exemplo.
+# Com a chave padrão, qualquer pessoa que leu este código conseguiria forjar um token de admin.
+if not DATABASE_URL.startswith("sqlite"):
+    if SECRET_KEY == "troque-esta-chave-em-producao" or len(SECRET_KEY) < 32:
+        raise RuntimeError("Defina uma SECRET_KEY aleatória com 32+ caracteres (veja o .env.example)")
+    if ADMIN_SENHA in ("admin123", "troque-esta-senha"):
+        raise RuntimeError("Defina uma ADMIN_SENHA própria (veja o .env.example)")

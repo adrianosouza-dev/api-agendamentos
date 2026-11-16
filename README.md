@@ -102,6 +102,8 @@ O driver (`psycopg`) já está no `requirements.txt`.
 
 As tabelas são criadas automaticamente na primeira execução.
 
+Por segurança, com Postgres a API se recusa a subir se `SECRET_KEY` ou `ADMIN_SENHA` ainda estiverem com os valores de exemplo.
+
 ## Próximos passos
 
 - **Concorrência**: se dois clientes confirmarem o mesmo horário no mesmo instante, ambos podem passar pela checagem. Em Postgres isso se resolve no próprio banco, com uma *exclusion constraint* sobre o intervalo de horário
