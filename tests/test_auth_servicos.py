@@ -10,6 +10,11 @@ def test_login_com_senha_errada(client):
     assert resposta.status_code == 401
 
 
+def test_login_com_usuario_inexistente(client):
+    resposta = client.post("/auth/login", data={"username": "ninguem", "password": "x"})
+    assert resposta.status_code == 401
+
+
 def test_criar_servico_exige_login(client):
     resposta = client.post("/servicos", json={"nome": "Corte", "duracao_minutos": 30, "preco": "35"})
     assert resposta.status_code == 401

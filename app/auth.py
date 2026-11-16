@@ -26,6 +26,10 @@ def gerar_hash(senha: str) -> str:
     return bcrypt.hashpw(senha.encode(), bcrypt.gensalt()).decode()
 
 
+# Usado no login quando o usuário não existe (ver routers/login.py)
+HASH_FALSO = gerar_hash("senha-que-nao-existe")
+
+
 def verificar_senha(senha: str, senha_hash: str) -> bool:
     if len(senha.encode()) > 72:  # limite do bcrypt
         return False
