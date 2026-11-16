@@ -87,6 +87,7 @@ def test_dados_invalidos(client, criar_servico, segunda):
     servico = criar_servico()
     assert agendar(client, servico["id"], f"{segunda}T10:00:00", telefone="123").status_code == 422
     assert agendar(client, servico["id"], f"{segunda}T10:00:00", nome="").status_code == 422
+    assert agendar(client, servico["id"], f"{segunda}T10:00:00", nome="   ").status_code == 422
     assert agendar(client, 999, f"{segunda}T10:00:00").status_code == 404
 
 

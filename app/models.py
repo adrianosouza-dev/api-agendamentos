@@ -33,6 +33,12 @@ class ServicoBase(SQLModel):
     duracao_minutos: int = Field(gt=0, le=240)
     preco: Decimal = Field(ge=0, max_digits=8, decimal_places=2)
 
+    @field_validator("nome", mode="before")
+    @classmethod
+    def tirar_espacos(cls, valor):
+        # Antes de checar o tamanho: "   " não pode passar como nome válido
+        return valor.strip() if isinstance(valor, str) else valor
+
 
 class Servico(ServicoBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -73,6 +79,12 @@ class AgendamentoCriar(SQLModel):
     cliente_telefone: str = Field(max_length=20)
     servico_id: int
     inicio: datetime
+
+    @field_validator("cliente_nome", mode="before")
+    @classmethod
+    def tirar_espacos(cls, valor):
+        # Antes de checar o tamanho: "   " não pode passar como nome válido
+        return valor.strip() if isinstance(valor, str) else valor
 
     @field_validator("cliente_telefone")
     @classmethod

@@ -73,7 +73,7 @@ def criar_agendamento(dados: AgendamentoCriar, session: SessionDep):
         raise HTTPException(status_code=409, detail="Esse horário já está ocupado")
 
     agendamento = Agendamento(
-        cliente_nome=dados.cliente_nome.strip(),
+        cliente_nome=dados.cliente_nome,
         cliente_telefone=dados.cliente_telefone,
         servico_id=servico.id,
         inicio=dados.inicio,
