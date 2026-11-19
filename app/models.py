@@ -115,3 +115,11 @@ class HorariosLivres(SQLModel):
     data: date
     servico_id: int
     horarios: list[str]
+
+
+class InfoBarbearia(SQLModel):
+    abertura: str
+    fechamento: str
+    intervalo_minutos: int
+    dias_funcionamento: list[int]  # 0 = segunda ... 6 = domingo
+    demo: bool

@@ -1,8 +1,19 @@
 from decimal import Decimal
 
 
-def test_status(client):
-    assert client.get("/").json()["status"] == "ok"
+def test_saude(client):
+    assert client.get("/saude").json() == {"status": "ok", "banco": "ok"}
+
+
+def test_site_e_info(client):
+    site = client.get("/")
+    assert site.status_code == 200
+    assert "text/html" in site.headers["content-type"]
+
+    info = client.get("/info").json()
+    assert info["abertura"] == "09:00"
+    assert info["dias_funcionamento"] == [0, 1, 2, 3, 4, 5]
+    assert info["demo"] is False
 
 
 def test_login_com_senha_errada(client):

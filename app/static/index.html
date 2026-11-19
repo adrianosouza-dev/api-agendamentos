@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agendamento | Barbearia Navalha</title>
+  <meta name="description" content="Marque seu horário na Barbearia Navalha. Demonstração de uma API de agendamentos feita com FastAPI.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231E4D3A'/><path d='M8-4 36 24M-4 8 24 36M20-4 48 24' stroke='%23C62B2B' stroke-width='5'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/estilo.css">
+</head>
+<body>
+  <div class="poste" aria-hidden="true"></div>
+
+  <header class="topo">
+    <div class="marca">
+      <span class="marca-nome">Navalha</span>
+      <span class="marca-sub">Barbearia</span>
+    </div>
+    <nav class="abas" aria-label="Áreas do site">
+      <button type="button" class="aba" data-aba="agendar" aria-current="page">Agendar</button>
+      <button type="button" class="aba" data-aba="agenda">Agenda do barbeiro</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============================================================ Cliente -->
+    <section id="agendar" class="area">
+      <h1 class="titulo">Marque seu horário</h1>
+      <p class="intro" id="intro-funcionamento">Escolha o serviço, o dia e o horário. Leva menos de um minuto.</p>
+
+      <div id="fluxo">
+        <section class="passo" aria-labelledby="p1">
+          <h2 id="p1"><span class="num">1</span>Serviço</h2>
+          <div id="lista-servicos" class="servicos" role="radiogroup" aria-labelledby="p1">
+            <p class="carregando">Carregando serviços…</p>
+          </div>
+        </section>
+
+        <section class="passo" aria-labelledby="p2" data-depende="servico" hidden>
+          <h2 id="p2"><span class="num">2</span>Dia</h2>
+          <div id="lista-dias" class="dias" role="radiogroup" aria-labelledby="p2"></div>
+        </section>
+
+        <section class="passo" aria-labelledby="p3" data-depende="dia" hidden>
+          <h2 id="p3"><span class="num">3</span>Horário</h2>
+          <div id="lista-horarios" class="horarios" role="radiogroup" aria-labelledby="p3" aria-live="polite"></div>
+        </section>
+
+        <section class="passo" aria-labelledby="p4" data-depende="horario" hidden>
+          <h2 id="p4"><span class="num">4</span>Seus dados</h2>
+          <form id="form-agendar" class="formulario" novalidate>
+            <label>Nome
+              <input name="nome" autocomplete="given-name" required minlength="2" maxlength="80">
+            </label>
+            <label>Telefone com DDD
+              <input name="telefone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="(11) 91234-5678">
+            </label>
+            <p class="erro" id="erro-agendar" role="alert" hidden></p>
+            <button type="submit" class="botao" id="botao-agendar">Agendar</button>
+          </form>
+        </section>
+      </div>
+
+      <section id="confirmacao" class="cartao" hidden aria-live="polite">
+        <p class="cartao-titulo">Horário marcado</p>
+        <dl class="cartao-dados">
+          <div><dt>Serviço</dt><dd id="c-servico"></dd></div>
+          <div><dt>Dia</dt><dd id="c-dia"></dd></div>
+          <div><dt>Horário</dt><dd id="c-horario"></dd></div>
+          <div><dt>Nome</dt><dd id="c-nome"></dd></div>
+        </dl>
+        <p class="cartao-codigo">Agendamento nº <span id="c-id"></span></p>
+        <button type="button" class="botao botao-claro" id="botao-novo">Marcar outro horário</button>
+      </section>
+    </section>
+
+    <!-- ============================================================ Admin -->
+    <section id="agenda" class="area" hidden>
+      <h1 class="titulo">Agenda do barbeiro</h1>
+
+      <form id="form-login" class="formulario" novalidate>
+        <p class="intro">Entre para ver e cancelar os agendamentos do dia.</p>
+        <label>Usuário
+          <input name="usuario" autocomplete="username" required>
+        </label>
+        <label>Senha
+          <input name="senha" type="password" autocomplete="current-password" required>
+        </label>
+        <p class="erro" id="erro-login" role="alert" hidden></p>
+        <div class="linha-botoes">
+          <button type="submit" class="botao">Entrar</button>
+          <button type="button" class="botao botao-claro" id="botao-demo" hidden>Usar conta de demonstração</button>
+        </div>
+      </form>
+
+      <div id="painel" hidden>
+        <div class="painel-topo">
+          <div class="navegar-dia">
+            <button type="button" class="botao-icone" id="dia-anterior" aria-label="Dia anterior">‹</button>
+            <input type="date" id="dia-agenda" aria-label="Dia da agenda">
+            <button type="button" class="botao-icone" id="dia-seguinte" aria-label="Próximo dia">›</button>
+          </div>
+          <button type="button" class="link" id="botao-sair">Sair</button>
+        </div>
+        <label class="opcao">
+          <input type="checkbox" id="mostrar-cancelados"> Mostrar cancelados
+        </label>
+        <p class="resumo" id="resumo-dia" aria-live="polite"></p>
+        <ol id="lista-agenda" class="agenda"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p><strong>Projeto de portfólio.</strong> Este site é a vitrine de uma API REST de agendamentos feita com Python, FastAPI e Postgres.</p>
+    <p id="aviso-demo" hidden>Os dados são fictícios e voltam ao estado inicial todo dia. Não use seu telefone real.</p>
+    <p class="links">
+      <a href="/docs">Documentação da API</a>
+      <a href="https://github.com/adrianosouza-dev/api-agendamentos">Código no GitHub</a>
+    </p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

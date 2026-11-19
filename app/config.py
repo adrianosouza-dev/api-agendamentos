@@ -38,6 +38,10 @@ CORS_ORIGINS = [
     if origem.strip()
 ]
 
+# Modo demonstração (versão pública do portfólio): cria dados de exemplo e um login
+# "demo" público, e renova tudo uma vez por dia. Veja app/demo.py.
+DEMO_MODO = os.getenv("DEMO_MODO", "false").strip().lower() in ("1", "true", "sim")
+
 # Segurança: com banco de produção (Postgres), não deixa subir com a chave ou senha de exemplo.
 # Com a chave padrão, qualquer pessoa que leu este código conseguiria forjar um token de admin.
 if not DATABASE_URL.startswith("sqlite"):
