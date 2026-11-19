@@ -4,6 +4,16 @@ API REST para barbearias: o cliente consulta os horários livres e marca um aten
 
 Feita com **Python + FastAPI**, banco de dados com **SQLModel** (SQLite local, Postgres em produção), login com **JWT** e testes automatizados com **pytest**.
 
+## Teste em 1 minuto
+
+**Demo online: https://api-agendamentos-u43c.onrender.com**
+
+1. Escolha um serviço, um dia e um horário, e agende
+2. Abra **Agenda do barbeiro** e clique em **Usar conta de demonstração** (usuário `demo`, senha `demo1234`): o seu agendamento aparece na agenda do dia
+3. Explore a API em [`/docs`](https://api-agendamentos-u43c.onrender.com/docs): clique em **Authorize** com o mesmo login para testar as rotas de admin
+
+Os dados são fictícios e voltam ao estado inicial todo dia. O site é HTML, CSS e JavaScript puro, servido pela própria API.
+
 ## Funcionalidades
 
 - Cadastro de serviços com duração e preço (corte 30 min, combo 60 min...)
@@ -26,6 +36,9 @@ Feita com **Python + FastAPI**, banco de dados com **SQLModel** (SQLite local, P
 
 | Método | Rota | Acesso | O que faz |
 |---|---|---|---|
+| GET | `/` | Público | Site de agendamento |
+| GET | `/saude` | Público | Healthcheck: API e banco respondendo |
+| GET | `/info` | Público | Horário e dias de funcionamento |
 | POST | `/auth/login` | Público | Login do admin, devolve o token |
 | GET | `/servicos` | Público | Lista os serviços |
 | POST | `/servicos` | Admin | Cria um serviço |
@@ -67,7 +80,9 @@ copy .env.example .env         # Windows  (Linux/Mac: cp .env.example .env)
 uvicorn app.main:app --reload
 ```
 
-Abra http://127.0.0.1:8000/docs. Para usar as rotas de admin, clique em **Authorize** e entre com o usuário e a senha definidos no `.env`.
+Abra http://127.0.0.1:8000 para o site e http://127.0.0.1:8000/docs para a documentação. Para usar as rotas de admin, clique em **Authorize** e entre com o usuário e a senha definidos no `.env`.
+
+Para ter dados de exemplo localmente, coloque `DEMO_MODO=true` no `.env`.
 
 ## Testes
 
@@ -87,7 +102,9 @@ app/
   models.py         tabelas e formatos de entrada/saída
   regras.py         regras de agenda (funções puras, sem banco)
   auth.py           hash de senha, JWT e proteção das rotas de admin
+  demo.py           dados de exemplo da versão pública (modo demonstração)
   routers/          rotas agrupadas por assunto
+  static/           site de agendamento (HTML, CSS e JS, sem build)
 tests/              testes das regras e da API
 ```
 
@@ -103,6 +120,16 @@ O driver (`psycopg`) já está no `requirements.txt`.
 As tabelas são criadas automaticamente na primeira execução.
 
 Por segurança, com Postgres a API se recusa a subir se `SECRET_KEY` ou `ADMIN_SENHA` ainda estiverem com os valores de exemplo.
+
+## Versão pública (Render)
+
+A demo roda no plano gratuito do Render com `DEMO_MODO=true`. Nesse modo:
+
+- a API cria serviços e ocupa parte da agenda dos próximos 14 dias, sempre respeitando as regras de horário
+- existe um login de admin público (`demo` / `demo1234`)
+- na primeira requisição de cada dia, tudo volta ao estado inicial, desfazendo o que os visitantes mudaram
+
+O plano gratuito desliga o servidor após 15 minutos sem acesso, e o primeiro acesso seguinte demora cerca de 1 minuto. Para evitar isso, um monitor externo gratuito (ex.: UptimeRobot) chama `/saude` a cada 5 minutos. Como o `/saude` consulta o banco, isso também impede que o Supabase pause o projeto por inatividade.
 
 ## Próximos passos
 
