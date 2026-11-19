@@ -267,10 +267,15 @@ async function carregarAgenda() {
   const cancelados = $("#mostrar-cancelados").checked;
   const lista = $("#lista-agenda");
   const resumo = $("#resumo-dia");
+  const pedido = `${dia}|${cancelados}`;
+  lista.dataset.pedido = pedido;
+  lista.innerHTML = "";
+  resumo.textContent = "Carregando agenda…";
   try {
     const itens = await api(`/agendamentos?data=${dia}&incluir_cancelados=${cancelados}`, {
       headers: { Authorization: `Bearer ${estado.token}` },
     });
+    if (lista.dataset.pedido !== pedido) return; // o usuário já trocou de dia: ignora esta resposta
     const porId = Object.fromEntries(estado.servicos.map((s) => [s.id, s]));
     const confirmados = itens.filter((a) => a.status === "confirmado");
     const previsto = confirmados.reduce((soma, a) => soma + Number(porId[a.servico_id]?.preco || 0), 0);
