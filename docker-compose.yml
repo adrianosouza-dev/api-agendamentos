@@ -1,0 +1,38 @@
+# Sobe a API e um Postgres com um comando:  docker compose up --build
+# Depois abra http://localhost:8000 (site) e http://localhost:8000/docs (API).
+#
+# Feito para rodar localmente. Os segredos abaixo são só para isso: em produção,
+# defina SECRET_KEY e ADMIN_SENHA de verdade (por variável de ambiente ou .env).
+
+services:
+  banco:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: agenda
+      POSTGRES_PASSWORD: agenda
+      POSTGRES_DB: agendamentos
+    volumes:
+      - dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agenda -d agendamentos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://agenda:agenda@banco:5432/agendamentos
+      SECRET_KEY: ${SECRET_KEY:-chave-local-do-docker-compose-nao-use-em-producao}
+      ADMIN_USUARIO: ${ADMIN_USUARIO:-admin}
+      ADMIN_SENHA: ${ADMIN_SENHA:-senha-local-do-docker}
+      # Dados de exemplo e login demo/demo1234, para já ter o que ver ao abrir
+      DEMO_MODO: ${DEMO_MODO:-true}
+    depends_on:
+      banco:
+        condition: service_healthy
+
+volumes:
+  dados:

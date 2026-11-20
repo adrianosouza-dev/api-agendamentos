@@ -25,6 +25,7 @@ Os dados são fictícios e voltam ao estado inicial todo dia.
 - **Alembic**: migrations do banco, aplicadas automaticamente no deploy
 - **JWT + bcrypt**: login do administrador
 - **pytest + GitHub Actions**: testes a cada push, em SQLite e em Postgres
+- **Docker**: imagem da API e `docker compose` com Postgres, validados no CI
 - **HTML, CSS e JavaScript puros**: site de agendamento servido pela própria API, sem build
 - **Render + UptimeRobot**: hospedagem e monitoramento
 
@@ -115,6 +116,16 @@ Respostas de erro: `400` horário fora das regras, `401` sem login, `404` não e
 
 ## Como rodar
 
+### Com Docker (API + Postgres)
+
+```bash
+docker compose up --build
+```
+
+Abra http://localhost:8000 (site) e http://localhost:8000/docs (API). Já vem com dados de exemplo e o login `demo` / `demo1234`. Para apagar tudo, inclusive o banco: `docker compose down --volumes`.
+
+### Sem Docker (Python + SQLite)
+
 Requer Python 3.10 ou mais novo.
 
 ```bash
@@ -145,7 +156,7 @@ Para rodar também no Postgres, aponte `TEST_DATABASE_URL` para um banco vazio, 
 TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/testes pytest -v
 ```
 
-No GitHub Actions, a cada push, os testes rodam duas vezes: no SQLite e num Postgres 16. Na rodada do Postgres, o CI também confere se as migrations batem com os modelos (`alembic check`).
+No GitHub Actions, a cada push, os testes rodam duas vezes: no SQLite e num Postgres 16. Na rodada do Postgres, o CI também confere se as migrations batem com os modelos (`alembic check`). Um terceiro job constrói a imagem Docker, sobe API e Postgres com o `docker compose` e confere a API rodando no container.
 
 ## Estrutura
 
@@ -163,6 +174,8 @@ app/
 migrations/         migrations do banco (Alembic)
 tests/              testes das regras, da API e do banco
 docs/               imagens do README
+Dockerfile          imagem da API
+docker-compose.yml  API + Postgres para rodar localmente
 ```
 
 ## Usando Postgres (Supabase)
@@ -220,4 +233,3 @@ O plano gratuito desliga o servidor após 15 minutos sem acesso, e o primeiro ac
 - Pausa para almoço e folgas em datas específicas
 - O cliente consultar e cancelar o próprio horário
 - Confirmação e lembrete por WhatsApp
-- Deploy com Docker

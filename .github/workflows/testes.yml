@@ -52,3 +52,26 @@ jobs:
           alembic downgrade base
           alembic upgrade head
           alembic check
+
+  docker:
+    name: Docker (API + Postgres)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir a imagem e subir com o docker compose
+        # --wait espera os healthchecks: Postgres pronto e /saude da API respondendo
+        run: docker compose up --build --detach --wait
+      - name: Conferir a API rodando no container
+        run: |
+          curl --fail --silent http://localhost:8000/saude
+          echo
+          curl --fail --silent http://localhost:8000/servicos \
+            | python3 -c "import sys, json; s = json.load(sys.stdin); assert len(s) == 5, s; print(len(s), 'serviços de exemplo')"
+          curl --fail --silent --output /dev/null http://localhost:8000/
+          docker compose exec -T api alembic current
+      - name: Logs dos containers (se algo falhar)
+        if: failure()
+        run: docker compose logs
+      - name: Desligar
+        if: always()
+        run: docker compose down --volumes

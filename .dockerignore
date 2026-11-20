@@ -1,0 +1,12 @@
+# Fica fora da imagem: só entra o necessário para rodar a API
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.env
+*.db
+docs
+tests
