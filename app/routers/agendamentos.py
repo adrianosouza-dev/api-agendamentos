@@ -2,6 +2,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app import regras
@@ -80,7 +81,13 @@ def criar_agendamento(dados: AgendamentoCriar, session: SessionDep):
         fim=fim,
     )
     session.add(agendamento)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        # Corrida: outro cliente pegou o mesmo horário entre a checagem acima e este commit.
+        # O Postgres barra a sobreposição (migrations/versions/0002) e respondemos como conflito.
+        session.rollback()
+        raise HTTPException(status_code=409, detail="Esse horário já está ocupado")
     session.refresh(agendamento)
     return agendamento
 

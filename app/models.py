@@ -62,6 +62,8 @@ class StatusAgendamento(str, Enum):
 
 
 class Agendamento(SQLModel, table=True):
+    # No Postgres, o banco também impede dois confirmados com horários sobrepostos
+    # (constraint criada em migrations/versions/0002_bloqueia_sobreposicao.py).
     id: Optional[int] = Field(default=None, primary_key=True)
     cliente_nome: str
     cliente_telefone: str
