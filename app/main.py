@@ -11,7 +11,7 @@ from sqlmodel import Session
 
 from app import config, demo
 from app.auth import SessionDep, criar_admin_inicial
-from app.database import criar_tabelas, engine
+from app.database import engine, migrar
 from app.models import InfoBarbearia
 from app.routers import agendamentos, login, servicos
 
@@ -21,7 +21,7 @@ PASTA_SITE = Path(__file__).parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Roda uma vez quando o servidor sobe
-    criar_tabelas()
+    migrar()  # cria ou atualiza as tabelas (Alembic)
     with Session(engine) as session:
         criar_admin_inicial(session)
     if config.DEMO_MODO:

@@ -4,7 +4,9 @@ import os
 # Assim os testes não dependem do seu .env nem criam arquivo de banco.
 os.environ.update(
     {
-        "DATABASE_URL": "sqlite://",  # banco em memória
+        # Banco em memória por padrão. Para testar no Postgres (como no CI), defina
+        # TEST_DATABASE_URL com a URL de um banco vazio, só para testes.
+        "DATABASE_URL": os.environ.get("TEST_DATABASE_URL") or "sqlite://",
         "SECRET_KEY": "chave-so-para-testes-com-32-bytes-ou-mais",
         "ADMIN_USUARIO": "admin",
         "ADMIN_SENHA": "senha-de-teste",
@@ -20,17 +22,24 @@ from datetime import date, timedelta  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 from sqlmodel import SQLModel  # noqa: E402
 
 from app.database import engine  # noqa: E402
 from app.main import app  # noqa: E402
 
 
+def zerar_banco():
+    SQLModel.metadata.drop_all(engine)
+    with engine.begin() as conexao:
+        conexao.execute(text("DROP TABLE IF EXISTS alembic_version"))
+
+
 @pytest.fixture
 def client():
     """Cliente HTTP de teste com banco zerado a cada teste."""
-    SQLModel.metadata.drop_all(engine)
-    with TestClient(app) as c:  # o "with" roda o lifespan: cria tabelas e o admin
+    zerar_banco()
+    with TestClient(app) as c:  # o "with" roda o lifespan: migrations e admin
         yield c
 
 
