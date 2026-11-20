@@ -2,7 +2,7 @@
 
 API REST para barbearias: o cliente consulta os horários livres e marca um atendimento, e o administrador gerencia os serviços e a agenda.
 
-Feita com **Python + FastAPI**, banco de dados com **SQLModel** (SQLite local, Postgres em produção), login com **JWT** e testes automatizados com **pytest**.
+Feita com **Python + FastAPI**, banco de dados com **SQLModel** (SQLite local, Postgres em produção) e migrations com **Alembic**, login com **JWT** e testes automatizados com **pytest**, rodando no CI contra SQLite e Postgres.
 
 ## Teste em 1 minuto
 
@@ -28,7 +28,7 @@ Os dados são fictícios e voltam ao estado inicial todo dia. O site é HTML, CS
 - Horários seguem uma grade (por padrão, de 30 em 30 minutos)
 - Um serviço não pode terminar depois do fechamento
 - Não é possível agendar no passado. O "agora" usa o fuso da barbearia, e não o do servidor: servidores na nuvem normalmente rodam em UTC, 3 horas à frente de Brasília
-- Dois atendimentos não podem se sobrepor, nem parcialmente (um combo das 10:00 às 11:00 bloqueia um corte às 10:30)
+- Dois atendimentos não podem se sobrepor, nem parcialmente (um combo das 10:00 às 11:00 bloqueia um corte às 10:30). No Postgres, o próprio banco também garante isso (veja [Concorrência](#concorrência-dois-clientes-no-mesmo-horário))
 - Cancelar libera o horário, mas o registro continua no histórico. Desativar um serviço também não apaga os agendamentos antigos
 - Telefone aceita qualquer formato ("(45) 99999-1234") e é guardado só com os números
 
@@ -90,7 +90,15 @@ Para ter dados de exemplo localmente, coloque `DEMO_MODO=true` no `.env`.
 pytest -v
 ```
 
-Os testes usam um banco em memória e não dependem do seu `.env`. Eles também rodam automaticamente no GitHub Actions a cada push.
+Os testes usam um banco em memória e não dependem do seu `.env`.
+
+Para rodar também no Postgres, aponte `TEST_DATABASE_URL` para um banco vazio, só para testes (ele é apagado a cada teste):
+
+```bash
+TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/testes pytest -v
+```
+
+No GitHub Actions, a cada push, os testes rodam duas vezes: no SQLite e num Postgres 16. Na rodada do Postgres, o CI também confere se as migrations batem com os modelos (`alembic check`).
 
 ## Estrutura
 
@@ -105,7 +113,8 @@ app/
   demo.py           dados de exemplo da versão pública (modo demonstração)
   routers/          rotas agrupadas por assunto
   static/           site de agendamento (HTML, CSS e JS, sem build)
-tests/              testes das regras e da API
+migrations/         migrations do banco (Alembic)
+tests/              testes das regras, da API e do banco
 ```
 
 As regras de horário ficam em `regras.py`, separadas das rotas e do banco. Assim dá pra testá-las isoladamente e reaproveitá-las se a API mudar de framework.
@@ -117,9 +126,37 @@ As regras de horário ficam em `regras.py`, separadas das rotas e do banco. Assi
 
 O driver (`psycopg`) já está no `requirements.txt`.
 
-As tabelas são criadas automaticamente na primeira execução.
+Ao subir, a API aplica sozinha as migrations pendentes (o mesmo que `alembic upgrade head`), então um deploy novo atualiza o banco sem passo manual.
 
 Por segurança, com Postgres a API se recusa a subir se `SECRET_KEY` ou `ADMIN_SENHA` ainda estiverem com os valores de exemplo.
+
+## Migrations (Alembic)
+
+A estrutura do banco é versionada em `migrations/versions/`. Para mudar um modelo:
+
+```bash
+alembic revision --autogenerate -m "descrição da mudança"   # gera a migration a partir dos modelos
+# revise o arquivo gerado
+alembic upgrade head                                         # aplica (a API também aplica ao subir)
+```
+
+Bancos criados antes do Alembic (pelo antigo `create_all`) são reconhecidos e marcados como já estando na primeira versão, sem recriar nada.
+
+## Concorrência: dois clientes no mesmo horário
+
+A API confere se o horário está livre antes de salvar. Mas, se dois clientes confirmarem o mesmo horário no mesmo instante, os dois consultam o banco, os dois veem o horário livre e os dois salvariam.
+
+No Postgres, quem impede isso é o próprio banco, com uma *exclusion constraint* (migration `0002`):
+
+```sql
+ALTER TABLE agendamento ADD CONSTRAINT agendamento_sem_sobreposicao
+  EXCLUDE USING gist (tsrange(inicio, fim) WITH &&)
+  WHERE (status = 'confirmado');
+```
+
+Ou seja: dois agendamentos confirmados não podem ter intervalos `[inicio, fim)` que se sobreponham. Os cancelados não contam, e 10:00–10:30 com 10:30–11:00 não conflitam. Quando o banco recusa, a API responde `409`, igual a um horário já ocupado.
+
+O teste `test_dois_clientes_ao_mesmo_tempo` reproduz a corrida com duas conexões simultâneas: as duas veem o horário livre, e o banco aceita só uma.
 
 ## Versão pública (Render)
 
@@ -133,8 +170,7 @@ O plano gratuito desliga o servidor após 15 minutos sem acesso, e o primeiro ac
 
 ## Próximos passos
 
-- **Concorrência**: se dois clientes confirmarem o mesmo horário no mesmo instante, ambos podem passar pela checagem. Em Postgres isso se resolve no próprio banco, com uma *exclusion constraint* sobre o intervalo de horário
 - Vários barbeiros, cada um com a própria agenda
 - Pausa para almoço e folgas em datas específicas
 - Confirmação e lembrete por WhatsApp
-- Migrations com Alembic e deploy com Docker
+- Deploy com Docker

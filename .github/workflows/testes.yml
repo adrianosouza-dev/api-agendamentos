@@ -6,13 +6,49 @@ on:
 
 jobs:
   testes:
+    name: Testes (${{ matrix.banco }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # SQLite: o banco do desenvolvimento local. Postgres: o banco de produção,
+        # onde também roda a trava contra agendamentos sobrepostos.
+        banco: [sqlite, postgres]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testes
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: ${{ matrix.banco == 'postgres' && 'postgresql://postgres:postgres@localhost:5432/testes' || '' }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
       - name: Instalar dependências
         run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Rodar testes
         run: pytest -v
+      - name: Conferir se as migrations batem com os modelos
+        if: matrix.banco == 'postgres'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/testes
+          SECRET_KEY: chave-so-para-o-ci-com-32-bytes-ou-mais
+          ADMIN_SENHA: senha-do-ci
+        run: |
+          alembic downgrade base
+          alembic upgrade head
+          alembic check
